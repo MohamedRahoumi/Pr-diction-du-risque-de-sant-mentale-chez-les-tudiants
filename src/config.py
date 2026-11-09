@@ -34,3 +34,10 @@ CONT_COLS = [
 OTHER_NUM_COLS = ["Age", "Year_of_Study", "Financial_Stress", "Family_Support"]
 
 ORDINAL_COLS = {
+    "Physical_Activity": ["Low", "Moderate", "High"],
+    "Diet_Quality": ["Poor", "Average", "Good"],
+}
+BINARY_COLS = ["Part_Time_Job", "Previous_Mental_Health_History"]
+NOMINAL_COLS = ["Gender"]
+
+FEATURE_COLS = CONT_COLS + OTHER_NUM_COLS + list(ORDINAL_COLS) + BINARY_COLS + NOMINAL_COLS

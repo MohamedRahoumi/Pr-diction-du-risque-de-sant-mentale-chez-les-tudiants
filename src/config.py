@@ -13,3 +13,24 @@ else:
 METRICS_PATH = ROOT_DIR / "models" / "metrics.json"
 TRAIN_INFO_PATH = ROOT_DIR / "models" / "train_info.json"
 FIG_DIR = ROOT_DIR / "reports" / "figures"
+
+TARGET = "Mental_Health_Risk"
+ID_COL = "Student_ID"
+RANDOM_STATE = 42
+TEST_SIZE = 0.2
+MIN_F1_MACRO = 0.60
+
+RISK_ORDER = ["Low", "Medium", "High"]
+RISK_MAP = {"Low": 0, "Medium": 1, "High": 2}
+
+CONT_COLS = [
+    "Sleep_Hours",
+    "Study_Hours_Per_Week",
+    "GPA",
+    "Social_Media_Hours",
+    "Screen_Time_Hours",
+    "Attendance_Rate",
+]
+OTHER_NUM_COLS = ["Age", "Year_of_Study", "Financial_Stress", "Family_Support"]
+
+ORDINAL_COLS = {

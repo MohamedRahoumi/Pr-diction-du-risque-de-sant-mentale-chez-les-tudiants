@@ -83,3 +83,53 @@ flowchart LR
 * **Encodage différentié :**
   * `OneHotEncoder(handle_unknown='ignore')` pour les variables nominales (`Gender`, `Part_Time_Job`, `Previous_Mental_Health_History`).
   * `OrdinalEncoder` respectant la sémantique ordonnée (`Physical_Activity`, `Diet_Quality`).
+* **Standardisation :** `StandardScaler` pour aligner les échelles numériques sans biaiser les estimateurs à base de marge ou de gradient.
+* **Sérialisation :** Pipeline de prétraitement complet sauvegardé dans `data/processed/preprocessor.pkl`.
+
+### Étape 3 — Entraînement & Comparaison des Modèles
+Comparaison sur le même ensemble d'entraînement via validation croisée stratifiée à 5 plis (*Stratified 5-Fold CV*) :
+1. **Régression Logistique Multinomiale (Baseline)** : Modèle linéaire régularisé $L_2$.
+2. **Support Vector Machine (Linear SVM)** : Séparateur à marge maximale avec noyau linéaire.
+3. **Random Forest Classifier** : Ensemble d'arbres décisionnels avec bagging.
+
+### Étape 4 — Optimisation & Évaluation Finale
+* **Fine-tuning des hyperparamètres :** Recherche exhaustive sur grille (`GridSearchCV`) sur le paramètre de régularisation $C$ et la perte `hinge`/`squared_hinge`.
+* **Calibration de probabilités :** Utilisation de `CalibratedClassifierCV(method='sigmoid')` afin de fournir à l'interface applicative des probabilités prédites fiables pour les 3 classes.
+* **Évaluation sur test indépendant (400 étudiants) :** Calcul de l'Accuracy, du Rappel, de la Précision et du F1-score pondéré ainsi que du score ROC-AUC multiclasse (One-vs-Rest).
+* **Export de production :** Pipeline complet de bout en bout sérialisé dans `models/mental_health_risk_pipeline.pkl`.
+
+### Étape 5 — Orchestration Airflow & Application Streamlit
+* **DAG Apache Airflow (`dags/mental_health_dag.py`) :** Pipeline automatisé composé de 4 tâches séquentielles :
+  1. `check_raw_data` : validation de présence du fichier de données brutes.
+  2. `preprocess_data` : exécution du pipeline de nettoyage et split train/test.
+  3. `train_model` : entraînement du SVM calibré.
+  4. `evaluate_model` : vérification des seuils de performance avant mise en production.
+* **Application interactive Streamlit (`app/streamlit_app.py`) :** Interface ergonomique comprenant un simulateur de prédiction en temps réel, un tableau de bord analytique des métriques, une exploration interactive du jeu de test et un rappel méthodologique complet.
+
+---
+
+## 📈 4. Résultats et Métriques de Performance
+
+### Comparatif sur le Jeu de Test Indépendant (400 étudiants)
+
+| Modèle | F1-Score (pondéré) | Accuracy | ROC-AUC (ovr) | Précision (pondérée) | Rappel (pondéré) | Décision |
+| :--- | :---: | :---: | :---: | :---: | :---: | :---: |
+| 🏆 **Linear SVM (Optimisé + Calibré)** | **76.21 %** | **76.25 %** | **88.08 %** | **76.17 %** | **76.25 %** | **Retenu pour la Production** |
+| Logistic Regression (Baseline) | 75.75 % | 75.75 % | 91.50 % | 76.10 % | 75.75 % | Modèle de référence |
+| SVM (Baseline brute non optimisée) | 72.14 % | 72.25 % | — | 72.10 % | 72.25 % | Améliorable par tuning |
+| Random Forest Classifier | 67.21 % | 67.75 % | 85.28 % | 67.89 % | 67.75 % | Écarté (surapprentissage des frontières) |
+
+### Matrice de Confusion du Modèle Final (400 étudiants)
+
+```text
+                     Prédit Low      Prédit Medium      Prédit High
+  Réel Low              109               22                 1
+  Réel Medium            23               84                25
+  Réel High               0               24               112
+```
+
+### 🔍 Analyse Qualifiée des Résultats
+* **Absence de faux négatifs critiques :** **0 étudiant** à risque élevé (`High`) n'a été classé à tort en risque faible (`Low`). Cette propriété est primordiale sur le plan éthique et préventif.
+* **Erreurs adjacentes tolérables :** La quasi-totalité des confusions résiduelles survient entre classes immédiatement contiguës (`Low` $\leftrightarrow$ `Medium` et `Medium` $\leftrightarrow$ `High`).
+* **Interprétabilité clinique :** Les variables ayant les poids normalisés les plus déterminants sont la privation de sommeil, le stress financier et l'absence de soutien familial.
+

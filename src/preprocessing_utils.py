@@ -33,3 +33,15 @@ class IQRCapper(BaseEstimator, TransformerMixin):
         self.lower_bounds_ = q1 - self.factor * iqr
         self.upper_bounds_ = q3 + self.factor * iqr
         self.n_features_in_ = X.shape[1]
+        return self
+
+    def transform(self, X):
+        if not hasattr(self, "lower_bounds_"):
+            raise RuntimeError("IQRCapper doit être fit avant transform.")
+        X = np.asarray(X, dtype=float).copy()
+        return np.clip(X, self.lower_bounds_, self.upper_bounds_)
+
+    def get_feature_names_out(self, input_features=None):
+        if input_features is None:
+            input_features = [f"x{i}" for i in range(self.n_features_in_)]
+        return np.asarray(input_features, dtype=object)

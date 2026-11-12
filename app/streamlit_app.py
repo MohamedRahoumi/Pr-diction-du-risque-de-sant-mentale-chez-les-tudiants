@@ -268,3 +268,45 @@ with tab_batch:
             if data is not None:
                 problems = (
                     [f"Le fichier dépasse {MAX_ROWS} lignes."]
+                    if len(data) > MAX_ROWS
+                    else validate_dataframe(data)
+                )
+                if problems:
+                    st.error("Fichier invalide :")
+                    for p in problems:
+                        st.write(f"- {p}")
+                else:
+                    result = predict_dataframe(model, data)
+                    st.success(f"{len(result)} profils traités.")
+                    counts = result["Risque_estime"].value_counts().reindex(RISK_ORDER).fillna(0)
+                    counts.index = [fr(c) for c in counts.index]
+                    st.bar_chart(counts)
+                    st.dataframe(result)
+                    st.download_button(
+                        "Télécharger les résultats",
+                        result.to_csv(index=False),
+                        "predictions.csv",
+                        "text/csv",
+                    )
+
+# --------------------------------------------------------------------------- onglet 4
+with tab_about:
+    st.markdown(
+        """
+### Ce que ce prototype est
+Un exercice pédagogique de classification supervisée (régression logistique ou SVM) qui estime un niveau de
+risque (Faible, Moyen, Élevé) à partir de variables de mode de vie : sommeil, études, stress, soutien…
+
+### Limites à connaître
+1. **Données simulées** : les performances ne se transposent pas à la réalité.
+2. Le modèle reproduit des **étiquettes simulées** ; il ne détecte **pas** une détresse psychologique réelle.
+3. Données **auto-déclarées** : biais de réponse possibles.
+4. Jeu de test de **400 étudiants** : chaque métrique a une incertitude de quelques points.
+5. La classe intermédiaire (**Moyen**) est la plus difficile à distinguer.
+6. Le groupe **Non-binaire** est très petit : ses résultats sont peu fiables statistiquement.
+7. **Association n'est pas causalité** : une variable liée au risque n'en est pas forcément la cause.
+
+### Ce que ce prototype ne doit jamais servir à faire
+Diagnostiquer, dépister, sanctionner, orienter une décision disciplinaire ou sélectionner des étudiants.
+"""
+    )

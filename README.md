@@ -133,3 +133,160 @@ Comparaison sur le même ensemble d'entraînement via validation croisée strati
 * **Erreurs adjacentes tolérables :** La quasi-totalité des confusions résiduelles survient entre classes immédiatement contiguës (`Low` $\leftrightarrow$ `Medium` et `Medium` $\leftrightarrow$ `High`).
 * **Interprétabilité clinique :** Les variables ayant les poids normalisés les plus déterminants sont la privation de sommeil, le stress financier et l'absence de soutien familial.
 
+---
+
+## 🏗️ 5. Structure du Répertoire
+
+Le projet est rigoureusement structuré conformément aux exigences du brief :
+
+```
+mental/
+├── app/
+│   └── streamlit_app.py              # Application interactive Streamlit
+├── assets/
+│   └── screenshots/                  # Captures d'écran de l'application
+│       ├── streamlit_simulator.png
+│       ├── streamlit_performances.png
+│       └── streamlit_test_data.png
+├── dags/
+│   └── mental_health_dag.py          # DAG d'orchestration Apache Airflow
+├── data/
+│   ├── processed/                    # Données préparées et sérialisées
+│   │   ├── preprocessor.pkl          # Pipeline de prétraitement fitté
+│   │   ├── train.csv                 # 80 % jeu d'entraînement (1 600 lignes)
+│   │   └── test.csv                  # 20 % jeu de test indépendant (400 lignes)
+│   └── raw/
+│       └── student_mental_health.csv # Jeu de données brut Kaggle
+├── models/
+│   ├── final_evaluation.pkl          # Métriques et matrices d'évaluation
+│   ├── logistic_regression_baseline.pkl
+│   ├── mental_health_risk_pipeline.pkl # Pipeline complet fitté de bout en bout
+│   └── metrics.json                  # Métriques JSON pour l'application Streamlit
+├── notebooks/
+│   ├── 1-eda.ipynb                   # Étape 1 : Analyse exploratoire
+│   ├── 2-preprocessing.ipynb         # Étape 2 : Préparation et transformation
+│   ├── 3-training.ipynb              # Étape 3 : Entraînement et comparaison
+│   └── 4-optimization.ipynb          # Étape 4 : Optimisation et évaluation
+├── src/
+│   ├── __init__.py
+│   ├── config.py                     # Constantes et chemins du projet
+│   ├── inference.py                  # Fonctions de validation et prédiction Streamlit
+│   └── preprocessing_utils.py        # Module utilitaire (classe IQRCapper)
+├── .dockerignore                     # Optimisation du contexte de build Docker
+├── BRIEF SC1.md                      # Cahier des charges officiel du Jury Blanc
+├── Dockerfile                        # Image conteneur de production Streamlit
+├── docker-compose.yml                # Orchestration multi-services (Streamlit + Airflow)
+├── README.md                         # Documentation complète du projet
+└── requirements.txt                  # Dépendances Python pip
+```
+
+---
+
+## ⚙️ 6. Guide d'Installation
+
+### Prérequis
+* **Python** : 3.10, 3.11 ou 3.12
+* **Git**
+* *(Optionnel pour le déploiement conteneurisé)* : **Docker** & **Docker Compose**
+
+### Installation Locale en Environnement Virtuel Standard (`venv`)
+
+```bash
+# 1. Cloner le dépôt Git
+git clone https://github.com/MohamedRahoumi/Pr-diction-du-risque-de-sant-mentale-chez-les-tudiants.git
+cd mental
+
+# 2. Créer l'environnement virtuel Python standard
+python3 -m venv .venv
+
+# 3. Activer l'environnement virtuel
+# Sur Linux / macOS :
+source .venv/bin/activate
+# Sur Windows :
+# .venv\Scripts\activate
+
+# 4. Mettre à jour pip et installer toutes les dépendances
+pip install --upgrade pip
+pip install -r requirements.txt
+```
+
+---
+
+## ▶️ 7. Guide d'Exécution
+
+### 1. Exploration des Notebooks Jupyter
+
+Pour relancer l'ensemble de la démarche pas à pas :
+
+```bash
+source .venv/bin/activate
+jupyter lab
+```
+Naviguez ensuite dans le répertoire `notebooks/` et exécutez les notebooks dans l'ordre :
+`1-eda.ipynb` $\rightarrow$ `2-preprocessing.ipynb` $\rightarrow$ `3-training.ipynb` $\rightarrow$ `4-optimization.ipynb`.
+
+### 2. Lancer l'Application Streamlit en Local
+
+```bash
+source .venv/bin/activate
+export PYTHONPATH=$PWD/src
+streamlit run app/streamlit_app.py
+```
+L'interface s'ouvre automatiquement à l'adresse : **[http://localhost:8501](http://localhost:8501)**.
+
+### 3. Lancer l'Environnement Complet avec Docker Compose
+
+Pour déployer simultanément l'application web Streamlit et le serveur d'orchestration Apache Airflow dans des conteneurs isolés :
+
+```bash
+docker compose up --build -d
+```
+
+| Service | URL d'accès | Identifiants par défaut | Rôle |
+|---|---|---|---|
+| **Streamlit Web App** | [http://localhost:8501](http://localhost:8501) | *Accès direct sans mot de passe* | Interface interactive de simulation et d'analyse |
+| **Apache Airflow UI** | [http://localhost:8080](http://localhost:8080) | `admin` / `admin` | Supervision et déclenchement des pipelines MLOps |
+
+Pour arrêter les services :
+```bash
+docker compose down
+```
+
+---
+
+## 📸 8. Galerie de l'Application Streamlit
+
+### Simulateur de Prédiction en Temps Réel
+Permet de renseigner ou de pré-remplir le profil d'un étudiant pour obtenir une estimation instantanée de son niveau de risque avec les probabilités associées et des conseils d'orientation bienveillants :
+![Simulateur de Prédiction](assets/screenshots/streamlit_simulator.png)
+
+### Performances du Modèle & Matrice de Confusion
+Affiche les indicateurs de performance (F1-score, Accuracy, ROC-AUC), la matrice de confusion normalisée et le tableau comparatif des modèles entraînés :
+![Performances et Métriques](assets/screenshots/streamlit_performances.png)
+
+### Exploration du Jeu de Test Indépendant
+Permet d'explorer les 400 étudiants du jeu de test mis de côté à l'étape 2 et de télécharger le fichier CSV correspondant :
+![Exploration du Jeu de Test](assets/screenshots/streamlit_test_data.png)
+
+---
+
+## 📅 9. Gestion de Projet & Suivi Jira
+
+Le projet a été piloté suivant les principes agiles Scrum/Kanban avec découpage fonctionnel des user stories et suivi d'avancement sur Jira :
+
+
+* **Organisation des Épics & Tâches :**
+  * `MTL-1` : Analyse exploratoire des données (EDA) et audit de qualité.
+  * `MTL-2` : Feature engineering, imputations, capping IQR et pipelines anti-leakage.
+  * `MTL-3` : Benchmark de 3 algorithmes de classification et validation croisée.
+  * `MTL-4` : Optimisation par GridSearchCV, calibration de probabilités et export du pipeline.
+  * `MTL-5` : Développement de l'orchestration avec DAG Airflow.
+  * `MTL-6` : Développement de l'interface graphique interactive avec Streamlit.
+  * `MTL-7` : Conteneurisation Docker, Docker Compose et finalisation documentaire.
+
+---
+
+
+## 📄 Licence
+
+Ce projet est sous licence MIT dans le cadre des activités pédagogiques de YouCode.

@@ -118,3 +118,63 @@ with tab_perf:
             xticklabels=labels,
             yticklabels=labels,
         )
+        axes[0].set_title("Effectifs")
+        sns.heatmap(
+            cm_norm,
+            annot=True,
+            fmt=".2f",
+            cmap="Blues",
+            vmin=0,
+            vmax=1,
+            cbar=False,
+            ax=axes[1],
+            xticklabels=labels,
+            yticklabels=labels,
+        )
+        axes[1].set_title("Normalisée par ligne (rappel)")
+        for ax in axes:
+            ax.set_xlabel("Prédit")
+            ax.set_ylabel("Réel")
+        plt.tight_layout()
+        st.pyplot(fig)
+        plt.close(fig)
+
+        st.subheader("Résultats par classe")
+        per_class = (
+            pd.DataFrame(metrics["per_class"])
+            .T.rename(
+                columns={
+                    "precision": "Précision",
+                    "recall": "Rappel",
+                    "f1": "F1",
+                    "support": "Effectif",
+                }
+            )
+        )
+        per_class.index = [fr(i) for i in per_class.index]
+        st.dataframe(per_class.round(3))
+
+# --------------------------------------------------------------------------- onglet 2
+with tab_test:
+    st.subheader("Estimer le niveau de risque d'un profil fictif")
+    if model is None:
+        st.error(model_error)
+    else:
+        with st.form("single_profile"):
+            c1, c2, c3 = st.columns(3)
+            age = c1.number_input("Âge", 16, 40, 21)
+            year = c1.selectbox("Année d'étude", [1, 2, 3, 4, 5], index=1)
+            gender = c1.selectbox("Genre", CATEGORIES["Gender"], format_func=fr)
+            sleep = c1.slider("Sommeil (h par nuit)", 3.0, 10.5, 6.8, 0.1)
+            study = c2.slider("Étude (h par semaine)", 0.0, 60.0, 20.0, 0.5)
+            gpa = c2.slider("GPA (sur 4)", 1.0, 4.0, 2.6, 0.01)
+            social = c2.slider("Réseaux sociaux (h par jour)", 0.0, 12.0, 6.0, 0.1)
+            screen = c2.slider("Temps d'écran total (h par jour)", 0.0, 16.0, 8.5, 0.1)
+            finance = c3.slider("Stress financier (1 à 10)", 1.0, 10.0, 6.0, 0.1)
+            family = c3.slider("Soutien familial (1 à 10)", 1.0, 10.0, 6.5, 0.1)
+            attendance = c3.slider("Assiduité (%)", 30.0, 100.0, 85.0, 1.0)
+            activity = c3.selectbox(
+                "Activité physique", CATEGORIES["Physical_Activity"], index=1, format_func=fr
+            )
+            diet = c3.selectbox(
+                "Qualité de l'alimentation", CATEGORIES["Diet_Quality"], index=1, format_func=fr

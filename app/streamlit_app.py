@@ -228,3 +228,43 @@ with tab_test:
                 st.bar_chart(probs)
                 if label == "High":
                     st.caption(
+                        "Ceci n'est pas un diagnostic. En cas de difficultés, un service de soutien "
+                        "étudiant ou un professionnel de santé peut aider."
+                    )
+
+# --------------------------------------------------------------------------- onglet 3
+SAMPLE = pd.DataFrame(
+    [
+        [21, "Female", 2, 6.8, 20.0, 2.6, 6.0, 8.5, "Moderate", 6.0, 6.5, 85.0, "No", "Average", "No"],
+        [19, "Male", 1, 5.2, 12.0, 2.1, 7.5, 10.0, "Low", 8.0, 4.0, 70.0, "Yes", "Poor", "Yes"],
+    ],
+    columns=FEATURE_COLS,
+)
+
+with tab_batch:
+    st.subheader("Prédictions sur un fichier CSV")
+    st.caption(
+        "Colonnes attendues : "
+        + ", ".join(FEATURE_COLS)
+        + ". Les colonnes en plus (Student_ID, cible) sont ignorées. "
+        "Les valeurs manquantes sont acceptées (le modèle les impute)."
+    )
+    st.download_button(
+        "Télécharger un exemple de CSV",
+        SAMPLE.to_csv(index=False),
+        "exemple_etudiants.csv",
+        "text/csv",
+    )
+    if model is None:
+        st.error(model_error)
+    else:
+        uploaded = st.file_uploader("Choisir un fichier CSV", type="csv")
+        if uploaded is not None:
+            try:
+                data = pd.read_csv(uploaded)
+            except Exception:
+                data = None
+                st.error("Fichier illisible : vérifie qu'il s'agit bien d'un CSV valide.")
+            if data is not None:
+                problems = (
+                    [f"Le fichier dépasse {MAX_ROWS} lignes."]

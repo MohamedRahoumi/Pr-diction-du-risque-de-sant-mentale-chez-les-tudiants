@@ -178,3 +178,53 @@ with tab_test:
             )
             diet = c3.selectbox(
                 "Qualité de l'alimentation", CATEGORIES["Diet_Quality"], index=1, format_func=fr
+            )
+            job = c3.selectbox("Emploi à temps partiel", CATEGORIES["Part_Time_Job"], format_func=fr)
+            history = c3.selectbox(
+                "Antécédents de santé mentale",
+                CATEGORIES["Previous_Mental_Health_History"],
+                format_func=fr,
+            )
+            submitted = st.form_submit_button("Estimer")
+
+        if submitted:
+            if screen < social:
+                st.warning(
+                    "Le temps d'écran total est inférieur au temps sur les réseaux sociaux, ce qui "
+                    "est impossible. Le modèle traitera le temps d'écran comme inconnu."
+                )
+            row = pd.DataFrame(
+                [
+                    {
+                        "Age": age,
+                        "Gender": gender,
+                        "Year_of_Study": year,
+                        "Sleep_Hours": sleep,
+                        "Study_Hours_Per_Week": study,
+                        "GPA": gpa,
+                        "Social_Media_Hours": social,
+                        "Screen_Time_Hours": screen,
+                        "Physical_Activity": activity,
+                        "Financial_Stress": finance,
+                        "Family_Support": family,
+                        "Attendance_Rate": attendance,
+                        "Part_Time_Job": job,
+                        "Diet_Quality": diet,
+                        "Previous_Mental_Health_History": history,
+                    }
+                ]
+            )
+            try:
+                result = predict_dataframe(model, row)
+            except Exception as exc:
+                st.error(f"Prédiction impossible : {exc}")
+            else:
+                label = result.loc[0, "Risque_estime"]
+                st.info(f"Niveau estimé par le prototype : **{fr(label)}**")
+                probs = pd.DataFrame(
+                    {"Probabilité": [result.loc[0, f"Proba_{c}"] for c in RISK_ORDER]},
+                    index=[fr(c) for c in RISK_ORDER],
+                )
+                st.bar_chart(probs)
+                if label == "High":
+                    st.caption(
